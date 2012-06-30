@@ -46,7 +46,8 @@ def read_list(tokens):
     else:
         return cons(token, read_list(tokens))
 
-def read(tokens):
+def read(src):
+    tokens = tokenise(src) if isinstance(src, basestring) else iter(src)
     token = tokens.next()
     if token == ")":
         raise SyntaxError
@@ -57,3 +58,13 @@ def read(tokens):
             raise SyntaxError("Unexpected end of input")
     else:
         yield token
+
+def iterate(expr):
+    while not eq(expr, ()):
+        yield car(expr)
+        expr = cdr(expr)
+
+def to_string(expr):
+    if atom(expr):
+        return str(expr)
+    return "(" + " ".join(to_string(e) for e in iterate(expr)) + ")"

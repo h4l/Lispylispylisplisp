@@ -45,22 +45,24 @@ class LispTest(unittest.TestCase):
                 "eq does not descend into lists")
 
     def testRead(self):
-        self.assertEqual(read(tokenise(
-                "abc")).next(),
+        self.assertEqual(read("abc").next(),
                 "abc")
-        self.assertEqual(read(tokenise(
-                "()")).next(),
+        self.assertEqual(read("()").next(),
                 ())
-        self.assertEqual(read(tokenise(
-                "(abc)")).next(),
+        self.assertEqual(read("(abc)").next(),
                 cons("abc", ()))
-        self.assertEqual(read(tokenise(
-                "(abc def)")).next(),
+        self.assertEqual(read("(abc def)").next(),
                 cons("abc", cons("def", ())))
         self.assertEqual(read(tokenise(
                 "(abc (def ()))")).next(),
                 ("abc", (("def", ((), ())), ()))
         )
+
+    def testToString(self):
+        self.assertEqual(to_string(read("abc").next()), "abc")
+        self.assertEqual(to_string(read("(abc)").next()), "(abc)")
+        self.assertEqual(to_string(read("(abc def)").next()), "(abc def)")
+        self.assertEqual(to_string(read("(abc (def ()))").next()), "(abc (def ()))")
 
 if __name__ == "__main__":
     unittest.main()
