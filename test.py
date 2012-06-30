@@ -1,5 +1,5 @@
 import unittest
-import lisp
+from lisp import *
 
 class LispTest(unittest.TestCase):
 
@@ -14,35 +14,53 @@ class LispTest(unittest.TestCase):
             ("(abc def (zzz))", ["(", "abc", "def", "(", "zzz", ")", ")"]),
         ]
         for text, expected_tokens in tests:
-            tokens = list(lisp.tokenise(text))
+            tokens = list(tokenise(text))
             self.assertEqual(tokens, expected_tokens, "input: \"%s\"" % text)
 
     def testCons(self):
-        self.assertEqual(lisp.cons("a", "b"), ("a", "b"))
-        self.assertEqual(lisp.cons("a", ()), ("a", ()))
-        self.assertEqual(lisp.cons("a", ("b", ())), ("a", ("b", ())))
+        self.assertEqual(cons("a", "b"), ("a", "b"))
+        self.assertEqual(cons("a", ()), ("a", ()))
+        self.assertEqual(cons("a", ("b", ())), ("a", ("b", ())))
 
     def testCar(self):
-        self.assertEqual(lisp.car(("a", ())), "a")
-        self.assertEqual(lisp.car(("a", ("b", ()))), "a")
-        self.assertEqual(lisp.car(()), ())
+        self.assertEqual(car(("a", ())), "a")
+        self.assertEqual(car(("a", ("b", ()))), "a")
+        self.assertEqual(car(()), ())
 
     def testCdr(self):
-        self.assertEqual(lisp.cdr(()), ())
-        self.assertEqual(lisp.cdr(("a", ("b", ()))), ("b", ()))
-        self.assertEqual(lisp.cdr(("a", ())), ())
+        self.assertEqual(cdr(()), ())
+        self.assertEqual(cdr(("a", ("b", ()))), ("b", ()))
+        self.assertEqual(cdr(("a", ())), ())
 
     def testAtom(self):
-        self.assertEqual(lisp.atom("xx"), "t")
-        self.assertEqual(lisp.atom(("foo", ())), ())
-        self.assertEqual(lisp.atom(()), "t")
+        self.assertEqual(atom("xx"), "t")
+        self.assertEqual(atom(("foo", ())), ())
+        self.assertEqual(atom(()), "t")
 
     def testEq(self):
-        self.assertEqual(lisp.eq("abc", "abc"), "t")
-        self.assertEqual(lisp.eq((), ()), "t")
-        self.assertEqual(lisp.eq("abc", "abcd"), ())
-        self.assertEqual(lisp.eq(("foo", ()), ("foo", ())), (),
+        self.assertEqual(eq("abc", "abc"), "t")
+        self.assertEqual(eq((), ()), "t")
+        self.assertEqual(eq("abc", "abcd"), ())
+        self.assertEqual(eq(("foo", ()), ("foo", ())), (),
                 "eq does not descend into lists")
+
+    def testRead(self):
+        self.assertEqual(read(tokenise(
+                "abc")).next(),
+                "abc")
+        self.assertEqual(read(tokenise(
+                "()")).next(),
+                ())
+        self.assertEqual(read(tokenise(
+                "(abc)")).next(),
+                cons("abc", ()))
+        self.assertEqual(read(tokenise(
+                "(abc def)")).next(),
+                cons("abc", cons("def", ())))
+        self.assertEqual(read(tokenise(
+                "(abc (def ()))")).next(),
+                ("abc", (("def", ((), ())), ()))
+        )
 
 if __name__ == "__main__":
     unittest.main()
