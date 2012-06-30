@@ -1,3 +1,4 @@
+
 def tokenise(text):
     token = ""
     for char in text:
@@ -75,9 +76,11 @@ def to_string(expr):
     return "(" + " ".join(to_string(e) for e in iterate(expr)) + ")"
 
 def caar(lst): return car(car(lst))
+def caadr(lst): return car(car(cdr(lst)))
 def cadar(lst): return car(cdr(car(lst)))
 def cadr(lst): return car(cdr(lst))
 def caddr(lst): return car(cdr(cdr(lst)))
+def cadadr(lst): return car(cdr(car(cdr(lst))))
 
 def lookup(atom, env):
     if eq(env, ()):
@@ -93,6 +96,6 @@ def evaluate(expr, env=()):
         if car(expr) == "quote": return cadr(expr)
         elif car(expr) == "atom": return atom(evaluate(cadr(expr), env))
         elif car(expr) == "cons": return cons(
-                evaluate(cadr(expr)),
-                evaluate(caddr(expr)), env)
+                evaluate(cadr(expr), env),
+                evaluate(caddr(expr), env))
 

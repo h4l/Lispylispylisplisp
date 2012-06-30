@@ -102,6 +102,18 @@ class LispTest(unittest.TestCase):
 
         self.assertEqual(e("abc"), ())
         self.assertEqual(e("abc", lst(lst("abc", "def"))), "def")
+
         self.assertEqual(e("(quote abc)"), "abc")
+        self.assertEqual(e("(quote (abc def))"), lst("abc", "def"))
+
+        self.assertEqual(e("(atom (quote (abc def)))"), ())
+        self.assertEqual(e("(atom (quote abc))"), "t")
+
+        self.assertEqual(e("(cons (quote ()) (quote ()))"),
+                lst(()))
+        self.assertEqual(e("(cons (quote abc) (quote ()))"),
+                lst("abc"))
+        self.assertEqual(e("(cons (quote abc) (quote def))"),
+                ("abc", "def"))
 if __name__ == "__main__":
     unittest.main()
