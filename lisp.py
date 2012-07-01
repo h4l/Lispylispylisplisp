@@ -1,12 +1,13 @@
+import re
 
 def tokenise(text):
     token = ""
     for char in text:
-        if char in "() ":
+        if re.match("\s|\(|\)", char):
             if token:
                 yield token
                 token = ""
-            if char != " ":
+            if char in "()":
                 yield char
         else:
             token += char
@@ -17,14 +18,14 @@ def cons(a, b):
     return (a, b)
 
 def car(x):
-    if not len(x):
-        return ()
+    if atom(x):
+        raise RuntimeError("car() called on atom: %s" % x)
     head, _ = x
     return head
 
 def cdr(x):
-    if not len(x):
-        return ()
+    if atom(x):
+        raise RuntimeError("cdr() called on atom: %s" % x)
     _, tail = x
     return tail
 
@@ -89,6 +90,13 @@ def lookup(atom, env):
         return cadar(env)
     return lookup(atom, cdr(env))
 
+def cond(cases):
+    if eq(cases, ()):
+        return ()
+    if eq(evaluate(caar(cases)), "t"):
+        return evaluate(cadar(cases))
+    return cond(cdr(cases))
+
 def evaluate(expr, env=()):
     if atom(expr):
         return lookup(expr, env)
@@ -98,4 +106,12 @@ def evaluate(expr, env=()):
         elif car(expr) == "cons": return cons(
                 evaluate(cadr(expr), env),
                 evaluate(caddr(expr), env))
+        elif car(expr) == "car": return car(evaluate(cadr(expr), env))
+        elif car(expr) == "cdr": return cdr(evaluate(cadr(expr), env))
+        elif car(expr) == "eq": return eq(
+                evaluate(cadr(expr), env),
+                evaluate(caddr(expr), env))
+        elif car(expr) == "cond": return cond(cdr(expr))
+        else: return evaluate(cons(evaluate(car(expr)), cdr(expr)))
+
 

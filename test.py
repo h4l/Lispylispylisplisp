@@ -23,6 +23,9 @@ class LispTest(unittest.TestCase):
             ("(abc def)", ["(", "abc", "def", ")"]),
             ("(abc def ())", ["(", "abc", "def", "(", ")", ")"]),
             ("(abc def (zzz))", ["(", "abc", "def", "(", "zzz", ")", ")"]),
+            ("""(
+            abc
+            )""", ["(", "abc", ")"]),
         ]
         for text, expected_tokens in tests:
             tokens = list(tokenise(text))
@@ -36,10 +39,8 @@ class LispTest(unittest.TestCase):
     def testCar(self):
         self.assertEqual(car(("a", ())), "a")
         self.assertEqual(car(("a", ("b", ()))), "a")
-        self.assertEqual(car(()), ())
 
     def testCdr(self):
-        self.assertEqual(cdr(()), ())
         self.assertEqual(cdr(("a", ("b", ()))), ("b", ()))
         self.assertEqual(cdr(("a", ())), ())
 
@@ -115,5 +116,21 @@ class LispTest(unittest.TestCase):
                 lst("abc"))
         self.assertEqual(e("(cons (quote abc) (quote def))"),
                 ("abc", "def"))
+
+        self.assertEqual(e("(car (quote (a b c)))"), "a")
+        self.assertEqual(e("(car (quote (x)))"), "x")
+
+        self.assertEqual(e("(cdr (quote (a b c)))"), lst("b", "c"))
+        self.assertEqual(e("(cdr (quote (x)))"), ())
+
+        self.assertEqual(e("(eq (quote ()) (quote ()))"), "t")
+        self.assertEqual(e("(eq (quote abc) (quote abc))"), "t")
+        self.assertEqual(e("(eq (quote abc) (quote def))"), ())
+        self.assertEqual(e("(eq (quote (abc)) (quote (abc)))"), ())
+
+        self.assertEqual(e("(cond ((quote t) (quote yay)))"), "yay")
+        self.assertEqual(e("""(cond
+                                  ((atom (quote (abc))) (quote abc))
+                                  ((quote t) (quote yay)))"""), "yay")
 if __name__ == "__main__":
     unittest.main()
