@@ -90,14 +90,14 @@ def lookup(atom, env):
         return cadar(env)
     return lookup(atom, cdr(env))
 
-def cond(cases):
+def cond(cases, env):
     if eq(cases, ()):
         return ()
-    if eq(evaluate(caar(cases)), "t"):
-        return evaluate(cadar(cases))
-    return cond(cdr(cases))
+    if eq(evaluate(caar(cases), env), "t"):
+        return evaluate(cadar(cases), env)
+    return cond(cdr(cases), env)
 
-def evaluate(expr, env=()):
+def evaluate(expr, env):
     if atom(expr):
         return lookup(expr, env)
     elif atom(car(expr)):
@@ -111,7 +111,50 @@ def evaluate(expr, env=()):
         elif car(expr) == "eq": return eq(
                 evaluate(cadr(expr), env),
                 evaluate(caddr(expr), env))
-        elif car(expr) == "cond": return cond(cdr(expr))
-        else: return evaluate(cons(evaluate(car(expr)), cdr(expr)))
+        elif car(expr) == "cond": return cond(cdr(expr), env)
+        else: return evaluate(cons(evaluate(car(expr), env), cdr(expr)), env)
+    elif atom(caar(expr)):
+        if eq(caar(expr), "lambda"):
+            # TODO: zip arg atoms with eval'd argument params, then eval body with arg pairs added to env
+            arg_atoms = cadar(expr)
+            arg_exprs = cdr(expr)
+            lambda_body = car(cdr(cdr(car(expr))))
+            return evaluate(lambda_body, prepend(
+                    arglist(arg_atoms, arg_exprs, env), env))
+        if eq(caar(expr), "label"):
+            name = cadar(expr)
+            value = car(expr)
+            subexpr = cadr(expr)
+            return evaluate(subexpr, cons(cons(name, cons(value, ())), env))
+    raise ValueError("Unable to evaluate expr: %s" % to_string(expr))
 
+def arglist(atoms, exprs, env):
+    if eq(atoms, ()) or eq(exprs, ()):
+        return ()
+    ah, at, eh, et = car(atoms), cdr(atoms), car(exprs), cdr(exprs)
+    return cons(cons(ah, cons(evaluate(eh, env), ())), arglist(at, et, env))
 
+def prepend(items, dest):
+    if eq(items, ()):
+        return dest
+    h, t = car(items), cdr(items)
+    return cons(h, prepend(t, dest))
+
+def repl(prompt=">>> "):
+    import sys, traceback
+    while True:
+        try:
+            sys.stdout.write(prompt)
+            line = sys.stdin.readline()
+            for prog in read(line):
+                sys.stdout.write(to_string(evaluate(prog, ())) + "\n")
+            if len(line) == 0:
+                sys.stdout.write("\n")
+        except KeyboardInterrupt:
+            return
+        except:
+            traceback.print_exc()
+
+if __name__ == "__main__":
+    print "Lispylispylisplisp!! v0.0.0.0.0.1"
+    repl()

@@ -99,7 +99,7 @@ class LispTest(unittest.TestCase):
 
     def testEvaluate(self):
         def e(s, env=()):
-            return evaluate(read(s).next(), env=env)
+            return evaluate(read(s).next(), env)
 
         self.assertEqual(e("abc"), ())
         self.assertEqual(e("abc", lst(lst("abc", "def"))), "def")
@@ -132,5 +132,17 @@ class LispTest(unittest.TestCase):
         self.assertEqual(e("""(cond
                                   ((atom (quote (abc))) (quote abc))
                                   ((quote t) (quote yay)))"""), "yay")
+
+
+        self.assertEqual(e("""((lambda () (quote abc)))"""), "abc")
+        self.assertEqual(e("""((lambda (x) x)
+                               (quote a))"""), "a")
+        self.assertEqual(e("""((lambda (x y) (cons x y))
+                               (quote a) (quote (b c)))"""), lst("a", "b", "c"))
+
+        self.assertEqual(e("((label foo (quote bar)) foo)"), read("(label foo (quote bar))").next())
+        self.assertEqual(e("""((label foo (lambda (x y z) z))
+                               (quote a) (quote b) (quote c))"""), "a")
+
 if __name__ == "__main__":
     unittest.main()
