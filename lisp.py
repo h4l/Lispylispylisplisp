@@ -79,6 +79,22 @@ def read_postprocess(src, *postprocessors):
         exprs = pp(exprs)
     return iterate(exprs)
 
+def backtick_filter(exprs):
+    expecting_expr = False
+    try:
+        while True:
+            e = exprs.next()
+            if atom(e) and not eq((), e) and e == "`":
+                expecting_expr = True
+                yield car(expand_backticks(lst([e, exprs.next()])))
+                expecting_expr = False
+            else:
+                yield expand_backticks(e)
+    except StopIteration:
+        if expecting_expr:
+            yield ()
+        pass
+
 def expand_backticks(expr):
     if eq((), expr):
         return ()
@@ -168,20 +184,38 @@ def prepend(items, dest):
     h, t = car(items), cdr(items)
     return cons(h, prepend(t, dest))
 
-def repl(prompt=">>> "):
-    import sys, traceback
-    while True:
-        try:
-            sys.stdout.write(prompt)
-            line = sys.stdin.readline()
-            for prog in read_postprocess(line, expand_backticks):
-                sys.stdout.write(to_string(evaluate(prog, ())) + "\n")
-            if len(line) == 0:
-                sys.stdout.write("\n")
-        except KeyboardInterrupt:
-            return
-        except:
-            traceback.print_exc()
+class PromptTokeniser(object):
+    def __init__(self):
+        import sys
+        self.expression_complete = True
+        self.normal_prompt = ">>> "
+        self.continuation_prompt = "... "
+        self.input = sys.stdin
+        self.output = sys.stdout
+
+    def on_expression_completed(self):
+        self.expression_complete = True
+
+    def get_prompt(self):
+        if self.expression_complete:
+            return self.normal_prompt
+        return self.continuation_prompt
+
+    def tokens(self):
+        while True:
+            self.output.write(self.get_prompt())
+            line = self.input.readline()
+            for token in tokenise(line):
+                self.expression_complete = False
+                yield token
+
+def repl(filters=[backtick_filter]):
+    tokeniser = PromptTokeniser()
+    expressions = reduce(lambda stream, f: f(stream),
+            filters, read(tokeniser.tokens()))
+    for expression in expressions:
+        tokeniser.on_expression_completed()
+        print to_string(evaluate(expression, ()))
 
 if __name__ == "__main__":
     print "Lispylispylisplisp!! v0.0.0.0.0.1"
