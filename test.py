@@ -29,7 +29,7 @@ class LispTest(unittest.TestCase):
         ]
         for text, expected_tokens in tests:
             tokens = list(tokenise(text))
-            self.assertEqual(tokens, expected_tokens, "input: \"%s\"" % text)
+            self.assertEqual(tokens, expected_tokens)
 
     def testCons(self):
         self.assertEqual(cons("a", "b"), ("a", "b"))
@@ -72,6 +72,11 @@ class LispTest(unittest.TestCase):
         self.assertEqual(list(read("abc def")),
                 ["abc", "def"])
 
+#        self.assertEqual(read("`abc").next(),
+#                lst("quote", "abc"))
+#        self.assertEqual(read("(`abc def)").next(),
+#                lst(lst("quote", "abc"), "def"))
+
     def testToString(self):
         self.assertEqual(to_string(read("abc").next()), "abc")
         self.assertEqual(to_string(read("(abc)").next()), "(abc)")
@@ -99,7 +104,7 @@ class LispTest(unittest.TestCase):
 
     def testEvaluate(self):
         def e(s, env=()):
-            return evaluate(read(s).next(), env)
+            return evaluate(read_postprocess(s, expand_backticks).next(), env)
 
         self.assertEqual(e("abc"), ())
         self.assertEqual(e("abc", lst(lst("abc", "def"))), "def")
@@ -135,14 +140,27 @@ class LispTest(unittest.TestCase):
 
 
         self.assertEqual(e("""((lambda () (quote abc)))"""), "abc")
+        self.assertEqual(e("""((lambda () (quote abc)))"""), "abc")
         self.assertEqual(e("""((lambda (x) x)
                                (quote a))"""), "a")
         self.assertEqual(e("""((lambda (x y) (cons x y))
                                (quote a) (quote (b c)))"""), lst("a", "b", "c"))
+        self.assertEqual(e("(%s `t `t)" % self.lambda_and), "t")
+        self.assertEqual(e("(%s `t `foo)" % self.lambda_and), ())
+        self.assertEqual(e("(%s `bar `t)" % self.lambda_and), ())
+        self.assertEqual(e("(%s `foo `bar)" % self.lambda_and), ())
+        self.assertEqual(e("(%s `() `())" % self.lambda_and), ())
 
         self.assertEqual(e("((label foo (quote bar)) foo)"), read("(label foo (quote bar))").next())
         self.assertEqual(e("""((label foo (lambda (x y z) z))
                                (quote a) (quote b) (quote c))"""), "a")
+    lambda_and = """
+        (lambda (x y) (cond
+          (x (cond
+            (y `t)
+            (`t `())))
+          (`t `())))
+        """
 
 if __name__ == "__main__":
     unittest.main()

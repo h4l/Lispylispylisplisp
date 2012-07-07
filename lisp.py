@@ -66,6 +66,34 @@ def read(src):
         else:
             yield token
 
+def lst(exprs):
+    try:
+        i = iter(exprs)
+        return cons(i.next(), lst(i))
+    except StopIteration:
+        return ()
+
+def read_postprocess(src, *postprocessors):
+    exprs = lst(read(src))
+    for pp in postprocessors:
+        exprs = pp(exprs)
+    return iterate(exprs)
+
+def expand_backticks(expr):
+    if eq((), expr):
+        return ()
+    if atom(expr):
+        if expr.startswith("`"):
+            assert len(expr) > 1, "orphaned backtick"
+            return cons("quote", cons(expand_backticks(expr[1:]), ()))
+        return expr
+    head, tail = car(expr), cdr(expr)
+    if atom(head) and head == "`":
+        th, tt = car(tail), cdr(tail)
+        return cons(cons("quote", cons(expand_backticks(th), ())), expand_backticks(tt))
+    return cons(expand_backticks(head), expand_backticks(tail))
+
+
 def iterate(expr):
     while not eq(expr, ()):
         yield car(expr)
@@ -146,7 +174,7 @@ def repl(prompt=">>> "):
         try:
             sys.stdout.write(prompt)
             line = sys.stdin.readline()
-            for prog in read(line):
+            for prog in read_postprocess(line, expand_backticks):
                 sys.stdout.write(to_string(evaluate(prog, ())) + "\n")
             if len(line) == 0:
                 sys.stdout.write("\n")
